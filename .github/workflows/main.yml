@@ -9,6 +9,11 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Upstream Sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
