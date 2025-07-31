@@ -93,6 +93,7 @@ pull_request_rules:
       - status-success=Python Unit Tests (1)
       - status-success=Python Unit Tests (2)
       - status-success=Python Unit Tests (3)
+      - status-success=Python Unit Tests (4)
       - label!=dont-merge
     actions:
       merge:
