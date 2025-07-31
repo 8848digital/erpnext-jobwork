@@ -83,3 +83,17 @@ pull_request_rules:
           {{ title }} (#{{ number }})
 
           {{ body }}
+  - name: Auto-merge backported PRs to version-15-hotfix
+    conditions:
+      - base=version-15-hotfix
+      - author=mergify[bot]
+      - status-success=linters
+      - status-success=Sider
+      - status-success=Patch Test
+      - status-success=Python Unit Tests (1)
+      - status-success=Python Unit Tests (2)
+      - status-success=Python Unit Tests (3)
+      - label!=dont-merge
+    actions:
+      merge:
+        method: merge
