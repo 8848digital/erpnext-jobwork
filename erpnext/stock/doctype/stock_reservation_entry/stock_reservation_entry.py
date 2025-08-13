@@ -1337,7 +1337,9 @@ class StockReservation:
 				.set(doctype.delivered_qty, doctype.delivered_qty + delivered_qty)
 				.set(
 					doctype.status,
-					Case().when((doctype.reserved_qty == doctype.delivered_qty), "Closed").else_("Reserved"),
+					Case()
+					.when((doctype.reserved_qty == doctype.delivered_qty), "Closed")
+					.else_("Partially Delivered"),
 				)
 				.where(doctype.name == name)
 			)
