@@ -1263,7 +1263,7 @@ class StockReservation:
 
 		return available_qty
 
-	def transfer_reservation_entries_to(self, docnames, from_doctype, to_doctype):
+	def transfer_reservation_entries_to(self, docnames, from_doctype, to_doctype, against_fg_item=None):
 		if isinstance(docnames, str):
 			docnames = [docnames]
 
@@ -1271,7 +1271,7 @@ class StockReservation:
 		if not items_to_reserve:
 			return
 
-		reservation_entries = self.get_reserved_entries(from_doctype, docnames)
+		reservation_entries = self.get_reserved_entries(from_doctype, docnames, against_fg_item)
 		if not reservation_entries:
 			return
 
@@ -1434,7 +1434,7 @@ class StockReservation:
 		sre.save()
 		sre.submit()
 
-	def get_reserved_entries(self, doctype, docnames):
+	def get_reserved_entries(self, doctype, docnames, against_fg_item=None):
 		if isinstance(docnames, str):
 			docnames = [docnames]
 
@@ -1473,6 +1473,17 @@ class StockReservation:
 			.orderby(sre.creation)
 			.orderby(sabb_entry.idx)
 		)
+
+		if against_fg_item:
+			query = query.where(
+				sre.voucher_detail_no.isin(
+					frappe.get_all(
+						"Subcontracting Inward Order Received Item",
+						filters={"reference_name": against_fg_item},
+						pluck="name",
+					)
+				)
+			)
 
 		return query.run(as_dict=True)
 
@@ -1856,7 +1867,7 @@ def create_stock_reservation_entries_for_scio_rm_items(
 ) -> None:
 	"""Creates Stock Reservation Entries for Subcontracting Inward Order Received Items."""
 
-	if cint(frappe.get_cached_value("Warehouse", scio.raw_materials_receipt_warehouse, "is_group")):
+	if cint(frappe.get_cached_value("Warehouse", scio.customer_warehouse, "is_group")):
 		return frappe.msgprint(
 			_("Stock cannot be reserved in the group warehouse {0}.").format(
 				frappe.bold(scio.customer_warehouse)
@@ -1912,7 +1923,7 @@ def create_stock_reservation_entries_for_scio_rm_items(
 				(sabe.docstatus == 1)
 				& (sabb.voucher_no.isin(all_stock_entries))
 				& (sabb.type_of_transaction == "Inward")
-				& (sabb.warehouse == scio.raw_materials_receipt_warehouse)
+				& (sabb.warehouse == scio.customer_warehouse)
 				& (sabb.item_code == item_code)
 			)
 		)
@@ -1997,7 +2008,7 @@ def create_stock_reservation_entries_for_scio_rm_items(
 		sre = frappe.new_doc("Stock Reservation Entry")
 
 		sre.item_code = item.rm_item_code
-		sre.warehouse = scio.raw_materials_receipt_warehouse
+		sre.warehouse = scio.customer_warehouse
 		sre.has_serial_no = has_serial_no
 		sre.has_batch_no = has_batch_no
 		sre.voucher_type = scio.doctype

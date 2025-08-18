@@ -45,7 +45,13 @@
   "section_break_zwje",
   "auto_create_subcontracting_inward_order",
   "column_break_1dcg",
-  "auto_create_delivery_note"
+  "auto_create_delivery_note",
+  "stock_reservation_section",
+  "reserve_non_customer_provided_items",
+  "section_break_zwh6",
+  "allow_delivery_of_overproduced_qty",
+  "column_break_idtu",
+  "do_not_include_scrap_items"
  ],
  "fields": [
   {
@@ -284,11 +290,47 @@
   },
   {
    "fieldname": "section_break_zwje",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Auto Creation"
   },
   {
    "fieldname": "column_break_q9qf",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_zwh6",
+   "fieldtype": "Section Break",
+   "label": "Delivery"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, system will allow user to deliver the entire quantity of the finished goods produced against the Subcontracting Inward Order. If disabled, system will allow delivery of only the ordered quantity.",
+   "fieldname": "allow_delivery_of_overproduced_qty",
+   "fieldtype": "Check",
+   "label": "Allow Delivery of over-produced Qty"
+  },
+  {
+   "fieldname": "column_break_idtu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "By default, system will include Scrap Items when creating Subcontracting Delivery.\nIf enabled, system will no longer add Scrap Items when creating Subcontracting Delivery.",
+   "fieldname": "do_not_include_scrap_items",
+   "fieldtype": "Check",
+   "label": "Do not include Scrap Items"
+  },
+  {
+   "fieldname": "stock_reservation_section",
+   "fieldtype": "Section Break",
+   "label": "Stock Reservation"
+  },
+  {
+   "default": "0",
+   "description": "If enabled, Non Customer Provided Items will be reserved on submission of Subcontracted Inward Order.\nIf disabled, they will be reserved on submission of Work Order instead.",
+   "fieldname": "reserve_non_customer_provided_items",
+   "fieldtype": "Check",
+   "label": "Reserve non Customer Provided Items"
   }
  ],
  "grid_page_length": 50,
@@ -297,7 +339,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-06 15:23:14.332971",
+ "modified": "2025-08-14 14:25:02.126513",
  "modified_by": "Administrator",
  "module": "Selling",
  "name": "Selling Settings",

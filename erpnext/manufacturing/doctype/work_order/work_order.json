@@ -15,10 +15,12 @@
   "image",
   "bom_no",
   "subcontracting_inward_order",
+  "subcontracting_inward_order_item",
   "sales_order",
   "column_break1",
   "company",
   "qty",
+  "max_producible_qty",
   "material_transferred_for_manufacturing",
   "produced_qty",
   "disassembled_qty",
@@ -77,8 +79,7 @@
   "production_plan_sub_assembly_item",
   "product_bundle_item",
   "amended_from",
-  "connections_tab",
-  "subcontracting_inward_order_item"
+  "connections_tab"
  ],
  "fields": [
   {
@@ -261,8 +262,8 @@
    "fieldname": "fg_warehouse",
    "fieldtype": "Link",
    "label": "Target Warehouse",
-   "mandatory_depends_on": "subcontracting_inward_order",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "read_only_depends_on": "subcontracting_inward_order"
   },
   {
    "fieldname": "column_break_12",
@@ -625,6 +626,15 @@
    "label": "Subcontracting Inward Order Item",
    "no_copy": 1,
    "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "max_producible_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Max Producible Qty",
+   "no_copy": 1,
+   "non_negative": 1,
    "read_only": 1
   }
  ],

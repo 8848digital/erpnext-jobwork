@@ -26,6 +26,9 @@ class SubcontractingInwardOrder(SubcontractingController):
 		from erpnext.subcontracting.doctype.subcontracting_inward_order_received_item.subcontracting_inward_order_received_item import (
 			SubcontractingInwardOrderReceivedItem,
 		)
+		from erpnext.subcontracting.doctype.subcontracting_inward_order_scrap_item.subcontracting_inward_order_scrap_item import (
+			SubcontractingInwardOrderScrapItem,
+		)
 		from erpnext.subcontracting.doctype.subcontracting_inward_order_service_item.subcontracting_inward_order_service_item import (
 			SubcontractingInwardOrderServiceItem,
 		)
@@ -34,6 +37,7 @@ class SubcontractingInwardOrder(SubcontractingController):
 		company: DF.Link
 		customer: DF.Link
 		customer_name: DF.Data
+		customer_warehouse: DF.Link
 		items: DF.Table[SubcontractingInwardOrderItem]
 		letter_head: DF.Link | None
 		naming_series: DF.Literal["SCI-ORD-.YYYY.-"]
@@ -41,11 +45,12 @@ class SubcontractingInwardOrder(SubcontractingController):
 		per_material_received: DF.Percent
 		per_process_loss: DF.Percent
 		per_produced: DF.Percent
-		raw_materials_receipt_warehouse: DF.Link
 		received_items: DF.Table[SubcontractingInwardOrderReceivedItem]
 		sales_order: DF.Link
+		scrap_items: DF.Table[SubcontractingInwardOrderScrapItem]
 		select_print_heading: DF.Link | None
 		service_items: DF.Table[SubcontractingInwardOrderServiceItem]
+		set_delivery_warehouse: DF.Link | None
 		status: DF.Literal["Draft", "Open", "Ongoing", "Produced", "Delivered", "Cancelled", "Closed"]
 		title: DF.Data | None
 		transaction_date: DF.Date
@@ -58,16 +63,17 @@ class SubcontractingInwardOrder(SubcontractingController):
 
 	def validate(self):
 		super().validate()
+		self.validate_customer_warehouse()
 		self.validate_sales_order_for_subcontracting()
 		self.validate_items()
 		self.validate_service_items()
 		self.set_missing_values()
-		self.reset_default_field_value("set_warehouse", "items", "warehouse")
 
 	def on_submit(self):
 		self.validate_customer_provided_items()
 		self.update_status()
 		self.update_subcontracted_quantity_in_so()
+		self.reserve_non_customer_provided_items()
 
 	def on_cancel(self):
 		self.update_status()
@@ -124,6 +130,48 @@ class SubcontractingInwardOrder(SubcontractingController):
 				else (doc.subcontracted_qty - service_item.qty)
 			)
 			doc.save()
+
+	def reserve_non_customer_provided_items(self):
+		from erpnext.stock.doctype.stock_reservation_entry.stock_reservation_entry import (
+			get_available_qty_to_reserve,
+		)
+
+		if frappe.get_single_value("Selling Settings", "reserve_non_customer_provided_items"):
+			self_procured_raw_materials = [
+				item for item in self.get("received_items") if not item.is_customer_provided_item
+			]
+			if self_procured_raw_materials:
+				for item in self_procured_raw_materials:
+					sre = frappe.new_doc("Stock Reservation Entry")
+					sre.voucher_type = "Subcontracting Inward Order"
+					sre.voucher_qty = item.required_qty
+					sre.voucher_no = self.name
+					sre.voucher_detail_no = item.name
+					sre.item_code = item.rm_item_code
+					sre.warehouse = self.customer_warehouse
+					sre.available_qty = get_available_qty_to_reserve(
+						item.rm_item_code, self.customer_warehouse
+					)
+					if not sre.available_qty:
+						frappe.msgprint(
+							_("Row #{0}: Stock not available to reserve for item {1}").format(
+								item.idx, frappe.bold(item.rm_item_code)
+							),
+							alert=True,
+						)
+						continue
+					else:
+						sre.reserved_qty = min(sre.voucher_qty, sre.available_qty)
+					sre.insert()
+					sre.submit()
+
+	def validate_customer_warehouse(self):
+		if frappe.get_value("Warehouse", self.customer_warehouse, "customer") != self.customer:
+			frappe.throw(
+				_("Customer Warehouse {0} does not belong to Customer {1}.").format(
+					frappe.bold(self.customer_warehouse), frappe.bold(self.customer)
+				)
+			)
 
 	def validate_sales_order_for_subcontracting(self):
 		if self.sales_order:
@@ -297,9 +345,10 @@ class SubcontractingInwardOrder(SubcontractingController):
 				"stock_uom": d.stock_uom,
 				"company": self.company,
 				"project": frappe.get_cached_value("Sales Order", self.sales_order, "project"),
-				"source_warehouse": self.raw_materials_receipt_warehouse,
+				"source_warehouse": self.customer_warehouse,
 				"subcontracting_inward_order_item": d.name,
 				"reserve_stock": 1,
+				"fg_warehouse": d.delivery_warehouse,
 			}
 
 			qty = min(
@@ -310,13 +359,12 @@ class SubcontractingInwardOrder(SubcontractingController):
 						d.precision("qty"),
 					)
 					for item in self.get("received_items")
-					if item.reference_name == d.name
+					if item.reference_name == d.name and item.is_customer_provided_item
 				]
 			)
+			qty = int(qty) if frappe.get_value("UOM", d.stock_uom, "must_be_whole_number") else qty
 
-			item_details.update(
-				{"qty": int(qty) if frappe.get_value("UOM", d.stock_uom, "must_be_whole_number") else qty}
-			)
+			item_details.update({"qty": qty, "max_producible_qty": qty})
 			item_list.append(item_details)
 
 		return item_list

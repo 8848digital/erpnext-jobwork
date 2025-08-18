@@ -37,10 +37,11 @@ frappe.ui.form.on("Subcontracting Inward Order", {
 
 		frm.set_indicator_formatter("item_code", (doc) => (doc.qty <= doc.received_qty ? "green" : "orange"));
 
-		frm.set_query("raw_materials_receipt_warehouse", () => {
+		frm.set_query("customer_warehouse", () => {
 			return {
 				filters: {
 					is_group: 0,
+					is_rejected_warehouse: 0,
 					company: frm.doc.company,
 				},
 			};
@@ -54,12 +55,43 @@ frappe.ui.form.on("Subcontracting Inward Order", {
 				},
 			};
 		});
+
+		frm.set_query("delivery_warehouse", "items", () => {
+			return {
+				filters: {
+					is_group: 0,
+					is_rejected_warehouse: 0,
+					company: frm.doc.company,
+				},
+			};
+		});
+
+		frm.set_query("set_delivery_warehouse", () => {
+			return {
+				filters: {
+					is_group: 0,
+					is_rejected_warehouse: 0,
+					company: frm.doc.company,
+				},
+			};
+		});
 	},
 
 	onload: (frm) => {
 		if (!frm.doc.transaction_date) {
 			frm.set_value("transaction_date", frappe.datetime.get_today());
 		}
+	},
+
+	set_delivery_warehouse: (frm) => {
+		frm.doc.items.forEach((item) =>
+			frappe.model.set_value(
+				item.doctype,
+				item.name,
+				"delivery_warehouse",
+				frm.doc.set_delivery_warehouse
+			)
+		);
 	},
 
 	sales_order: (frm) => {
@@ -197,14 +229,6 @@ erpnext.selling.SubcontractingInwardOrderController = class SubcontractingInward
 		}
 	}
 
-	make_subcontracting_delivery() {
-		frappe.model.open_mapped_doc({
-			method: "erpnext.subcontracting.doctype.subcontracting_inward_order.subcontracting_inward_order.make_subcontracting_delivery",
-			frm: cur_frm,
-			freeze_message: __("Creating Subcontracting Delivery ..."),
-		});
-	}
-
 	make_stock_entry() {
 		frappe.call({
 			method: "erpnext.controllers.subcontracting_controller.make_rm_stock_entry_inward",
@@ -223,6 +247,19 @@ erpnext.selling.SubcontractingInwardOrderController = class SubcontractingInward
 			method: "erpnext.controllers.subcontracting_controller.make_rm_return",
 			args: {
 				subcontract_inward_order: cur_frm.doc.name,
+			},
+			callback: (r) => {
+				var doclist = frappe.model.sync(r.message);
+				frappe.set_route("Form", doclist[0].doctype, doclist[0].name);
+			},
+		});
+	}
+
+	make_subcontracting_delivery() {
+		frappe.call({
+			method: "erpnext.controllers.subcontracting_controller.make_subcontracting_delivery",
+			args: {
+				subcontracting_inward_order: cur_frm.doc.name,
 			},
 			callback: (r) => {
 				var doclist = frappe.model.sync(r.message);
