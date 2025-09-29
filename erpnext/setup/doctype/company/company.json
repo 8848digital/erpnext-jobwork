@@ -22,6 +22,7 @@
   "domain",
   "date_of_establishment",
   "parent_company",
+  "reporting_currency",
   "company_info",
   "company_logo",
   "date_of_incorporation",
@@ -750,6 +751,7 @@
   },
   {
    "default": "0",
+   "description": "Upon enabling this, the JV will be submitted for a different exchange rate.",
    "fieldname": "submit_err_jv",
    "fieldtype": "Check",
    "label": "Submit ERR Journals?"
@@ -834,6 +836,14 @@
    "fieldtype": "Select",
    "label": "Reconciliation Takes Effect On",
    "options": "Advance Payment Date\nOldest Of Invoice Or Advance\nReconciliation Date"
+  },
+  {
+   "fieldname": "reporting_currency",
+   "fieldtype": "Link",
+   "label": "Reporting Currency",
+   "options": "Currency",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "icon": "fa fa-building",
@@ -841,7 +851,7 @@
  "image_field": "company_logo",
  "is_tree": 1,
  "links": [],
- "modified": "2025-01-09 20:12:25.471544",
+ "modified": "2025-08-25 18:34:03.602046",
  "modified_by": "Administrator",
  "module": "Setup",
  "name": "Company",
@@ -903,6 +913,7 @@
    "select": 1
   }
  ],
+ "row_format": "Dynamic",
  "show_name_in_global_search": 1,
  "sort_field": "creation",
  "sort_order": "ASC",

@@ -126,8 +126,9 @@ def get_stock_balance(
 	extra_cond = ""
 	if inventory_dimensions_dict:
 		for field, value in inventory_dimensions_dict.items():
+			column = frappe.utils.sanitize_column(field)
 			args[field] = value
-			extra_cond += f" and {field} = %({field})s"
+			extra_cond += f" and {column} = %({field})s"
 
 	last_entry = get_previous_sle(args, extra_cond=extra_cond)
 
@@ -372,6 +373,7 @@ def get_avg_purchase_rate(serial_nos):
 	)
 
 
+@frappe.request_cache
 def get_valuation_method(item_code):
 	"""get valuation method from item or default"""
 	val_method = frappe.get_cached_value("Item", item_code, "valuation_method")
